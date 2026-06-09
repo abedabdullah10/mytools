@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منصة الأدوات المجانية - تحويل وصناعة الملفات</title>
     <link href="https://googleapis.com" rel="stylesheet">
+    <!-- استدعاء أحدث نسخة معتمدة من مكتبة الـ PDF للتحميل المباشر -->
+    <script src="https://cloudflare.com"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
         body { background-color: #f8fafc; color: #1e293b; padding: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -19,17 +21,7 @@
         .file-status { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: right; display: none; border-right: 4px solid #3b82f6; }
         .action-btn { background: #10b981; color: white; border: none; padding: 14px 30px; font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer; width: 100%; }
         .action-btn:hover { background: #059669; }
-        
-        /* منطقة العرض الخاصة بالطباعة - تضمن ظهور الصور 100% */
-        #printArea { display: none; }
-
-        @media print {
-            html, body { height: 100%; margin: 0 !important; padding: 0 !important; background: #fff; }
-            body * { display: none !important; }
-            #printArea { display: block !important; width: 100%; height: 100%; }
-            .print-page { page-break-after: always; page-break-inside: avoid; display: flex; justify-content: center; align-items: center; width: 100vw; height: 100vh; }
-            .print-page img { width: 100%; height: 100%; object-fit: contain; display: block; }
-        }
+        .action-btn:disabled { background: #94a3b8; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -56,9 +48,6 @@
         </section>
     </div>
 
-    <!-- حاوية الصور المعدة للطباعة والتحويل للـ PDF -->
-    <div id="printArea"></div>
-
     <script>
         let loadedFiles = [];
 
@@ -82,42 +71,57 @@
             if (loadedFiles.length === 0) return;
             
             const generateBtn = document.getElementById('generateBtn');
-            generateBtn.innerText = "جاري تحضير المستند...";
+            generateBtn.innerText = "جاري دمج وتحميل المستند المباشر...";
             generateBtn.disabled = true;
 
-            const printArea = document.getElementById('printArea');
-            printArea.innerHTML = ''; 
+            try {
+                // استدعاء المكتبة بشكل صحيح لتدعم التنزيل المحلي الفوري
+                const { jsPDF } = window.jspdf;
+                const pdfDoc = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdfDoc.internal.pageSize.getWidth();
+                const pdfHeight = pdfDoc.internal.pageSize.getHeight();
 
-            // دمج ومعالجة الصور والتأكد من قراءتها بالكامل
-            for (let i = 0; i < loadedFiles.length; i++) {
-                const file = loadedFiles[i];
-                const base64 = await fileToBase64(file);
-                
-                const pageDiv = document.createElement('div');
-                pageDiv.className = 'print-page';
-                
-                const img = document.createElement('img');
-                img.src = base64;
-                
-                pageDiv.appendChild(img);
-                printArea.appendChild(pageDiv);
-            }
+                for (let i = 0; i < loadedFiles.length; i++) {
+                    if (i > 0) pdfDoc.addPage();
+                    
+                    const file = loadedFiles[i];
+                    const base64Data = await fileToCanvasData(file);
+                    
+                    // دمج البيانات مباشرة في ملف PDF دون استخدام نافذة الطباعة
+                    pdfDoc.addImage(base64Data, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+                }
 
-            // إعطاء المتصفح مهلة نصف ثانية لرسم وتأكيد وجود الصور بالكامل بالذاكرة قبل فتح نافذة الـ PDF
-            setTimeout(() => {
-                window.print();
+                // تحميل تلقائي فوري للمستند باسم مخصص
+                pdfDoc.save('tools-converted-file.pdf');
+            } catch (error) {
+                alert("يرجى التأكد من اختيار صورة صحيحة.");
+                console.error(error);
+            } finally {
                 generateBtn.innerText = "تحميل ملف PDF الآن";
                 generateBtn.disabled = false;
-            }, 600);
+            }
         }
 
-        function fileToBase64(file) {
+        // تحضير الصور وضغط أبعادها في الخلفية لضمان سلامة جودتها في الـ PDF
+        function fileToCanvasData(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
                 reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width > 1200 ? 1200 : img.width;
+                        canvas.height = (canvas.width * img.height) / img.width;
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.80));
+                    };
+                };
             });
         }
     </script>
 </body>
 </html>
+
