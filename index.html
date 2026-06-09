@@ -75,7 +75,6 @@
             generateBtn.disabled = true;
 
             try {
-                // استدعاء المكتبة بشكل صحيح لتدعم التنزيل المحلي الفوري
                 const { jsPDF } = window.jspdf;
                 const pdfDoc = new jsPDF('p', 'mm', 'a4');
                 const pdfWidth = pdfDoc.internal.pageSize.getWidth();
@@ -87,14 +86,14 @@
                     const file = loadedFiles[i];
                     const base64Data = await fileToCanvasData(file);
                     
-                    // دمج البيانات مباشرة في ملف PDF دون استخدام نافذة الطباعة
-                    pdfDoc.addImage(base64Data, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+                    // استخدام صيغة الاختصار 'JPEG' الثابتة برمجياً لتفادي الحروف الصغيرة
+                    pdfDoc.addImage(base64Data, 'JPEG', 0, 0, pdfWidth, pdfHeight);
                 }
 
                 // تحميل تلقائي فوري للمستند باسم مخصص
                 pdfDoc.save('tools-converted-file.pdf');
             } catch (error) {
-                alert("يرجى التأكد من اختيار صورة صحيحة.");
+                alert("حدث خطأ أثناء المعالجة، يرجى تجربة ملف آخر.");
                 console.error(error);
             } finally {
                 generateBtn.innerText = "تحميل ملف PDF الآن";
@@ -102,7 +101,7 @@
             }
         }
 
-        // تحضير الصور وضغط أبعادها في الخلفية لضمان سلامة جودتها في الـ PDF
+        // تحضير وتوحيد صيغة الصور لتقبلها المكتبة تلقائياً بدون مشاكل حروف
         function fileToCanvasData(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -116,6 +115,7 @@
                         canvas.width = img.width > 1200 ? 1200 : img.width;
                         canvas.height = (canvas.width * img.height) / img.width;
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        // إجبار المخرج النهائي ليكون داتا مشفرة بصيغة متوافقة تماماً
                         resolve(canvas.toDataURL('image/jpeg', 0.80));
                     };
                 };
