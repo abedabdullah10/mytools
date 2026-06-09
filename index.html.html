@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Untitled</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة الأدوات المجانية - تحويل وصناعة الملفات</title>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tajawal', sans-serif; }
+        body { background-color: #f8fafc; color: #1e293b; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        header { text-align: center; margin: 30px 0; max-width: 800px; }
+        header h1 { color: #0f172a; font-size: 28px; margin-bottom: 10px; }
+        header p { color: #64748b; font-size: 15px; }
+        .main-wrapper { width: 100%; max-width: 800px; }
+        .tool-card { background: #ffffff; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #e2e8f0; }
+        .upload-area { border: 2px dashed #3b82f6; padding: 40px 20px; border-radius: 12px; background: #f0f6ff; cursor: pointer; text-align: center; margin-bottom: 20px; }
+        .upload-area p { color: #2563eb; font-weight: 700; font-size: 16px; }
+        input[type="file"] { display: none; }
+        .file-status { background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: right; display: none; border-right: 4px solid #3b82f6; }
+        .action-btn { background: #10b981; color: white; border: none; padding: 14px 30px; font-size: 16px; font-weight: 700; border-radius: 10px; cursor: pointer; width: 100%; }
+        .action-btn:hover { background: #059669; }
+        
+        /* منطقة معالجة الصور المخفية للطباعة */
+        #printArea { display: none; }
+
+        /* إعدادات خاصة بالطباعة لتحويل الصور إلى PDF سليم */
+        @media print {
+            body * { display: none !important; }
+            #printArea { display: block !important; width: 100%; }
+            .print-page { page-break-after: always; page-break-inside: avoid; display: flex; justify-content: center; align-items: center; height: 100vh; }
+            .print-page img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>موقع الأدوات السريعة والمجانية</h1>
+        <p>إنجاز المهام اليومية بسرعة فائقة دون رفع ملفاتك لأي سيرفر.</p>
+    </header>
+
+    <div class="main-wrapper">
+        <section class="tool-card">
+            <h2>أداة تحويل الصور إلى ملف PDF متكامل</h2>
+            <div class="upload-area" onclick="document.getElementById('imgSelect').click()">
+                <p>اضغط هنا لتحديد الصور من جهازك</p>
+                <input type="file" id="imgSelect" accept="image/*" multiple onchange="monitorFiles(this.files)">
+            </div>
+
+            <div class="file-status" id="statusBox">
+                <strong>الملفات الجاهزة:</strong>
+                <ul id="nameList" style="list-style: none; margin-top: 5px; font-size: 13px;"></ul>
+            </div>
+
+            <button class="action-btn" id="generateBtn" onclick="processPDF()" style="display: none;">تحميل ملف PDF الآن</button>
+        </section>
+    </div>
+
+    <!-- الحاوية المخفية التي سيتم طباعتها كـ PDF -->
+    <div id="printArea"></div>
+
+    <script>
+        let loadedFiles = [];
+
+        function monitorFiles(files) {
+            loadedFiles = Array.from(files);
+            const statusBox = document.getElementById('statusBox');
+            const nameList = document.getElementById('nameList');
+            const generateBtn = document.getElementById('generateBtn');
+            
+            if (loadedFiles.length > 0) {
+                nameList.innerHTML = loadedFiles.map(file => `<li>• ${file.name}</li>`).join('');
+                statusBox.style.display = 'block';
+                generateBtn.style.display = 'block';
+            } else {
+                statusBox.style.display = 'none';
+                generateBtn.style.display = 'none';
+            }
+        }
+
+        async function processPDF() {
+            if (loadedFiles.length === 0) return;
+            
+            const printArea = document.getElementById('printArea');
+            printArea.innerHTML = ''; // تنظيف المنطقة
+
+            for (let i = 0; i < loadedFiles.length; i++) {
+                const file = loadedFiles[i];
+                const base64 = await fileToBase64(file);
+                
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'print-page';
+                
+                const img = document.createElement('img');
+                img.src = base64;
+                
+                pageDiv.appendChild(img);
+                printArea.appendChild(pageDiv);
+            }
+
+            // استدعاء نافذة الطباعة وتحويلها لـ PDF تلقائياً
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+
+        function fileToBase64(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+            });
+        }
+    </script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
